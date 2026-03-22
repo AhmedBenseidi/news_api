@@ -12,38 +12,40 @@ use App\Http\Controllers\Api\{
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes (المسارات العامة)
+| Public Routes (المسارات العامة - متاحة للجميع بدون Token)
 |--------------------------------------------------------------------------
 */
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/home', [HomeController::class, 'index']);
 Route::get('/search', [NewsController::class, 'search']);
 
-// مجموعة مسارات الأخبار العامة
+// مسارات العرض العامة (Index & Show)
+Route::get('/banners', [BannerController::class, 'index']);
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{id}', [CategoryController::class, 'show']);
+
+// مسارات الأخبار العامة (العرض)
 Route::prefix('news')->controller(NewsController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::get('/{id}', 'show');
-    Route::get('/category/{id}', 'getByCategory'); // تحسين الرابط ليكون أوضح
+    Route::get('/', 'index');           // عرض كل الأخبار
+    Route::get('/{id}', 'show');        // عرض خبر محدد
+    Route::get('/category/{id}', 'getByCategory'); // عرض أخبار حسب التصنيف
 });
 
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (المسارات المحمية - تتطلب Token)
 |--------------------------------------------------------------------------
+| هذه المسارات مخصصة فقط لعمليات الإضافة، التعديل، والحذف.
 */
 Route::middleware('auth:sanctum')->group(function () {
 
     // إدارة الحساب
     Route::get('/user', fn(Request $request) => $request->user());
     Route::match(['get', 'put'], '/profile', [AuthController::class, 'profile']);
-    Route::post('/logout', [AuthController::class, 'logout']); // نقل المنطق للكنترولر أفضل
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-    // إدارة الأخبار (Resourceful)
+    // العمليات الإدارية (Store, Update, Destroy)
     Route::apiResource('news', NewsController::class)->only(['store', 'update', 'destroy']);
-
-    // إدارة التصنيفات
-    Route::apiResource('categories', CategoryController::class);
-
-    // إدارة البنرات
-    Route::apiResource('banners', BannerController::class)->except(['show',]);
+    Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy']);
+    Route::apiResource('banners', BannerController::class)->only(['store', 'update', 'destroy']);
 });
